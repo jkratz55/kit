@@ -3,10 +3,8 @@ package consul
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"reflect"
-	"sync"
 	"testing"
 
 	stdconsul "github.com/hashicorp/consul/api"
@@ -60,8 +58,6 @@ func TestClientRegistration(t *testing.T) {
 
 type testClient struct {
 	entries []*stdconsul.ServiceEntry
-	index   uint64
-	lock    sync.Mutex
 }
 
 func newTestClient(entries []*stdconsul.ServiceEntry) *testClient {
@@ -74,10 +70,6 @@ var _ Client = &testClient{}
 
 func (c *testClient) Service(service, tag string, _ bool, opts *stdconsul.QueryOptions) ([]*stdconsul.ServiceEntry, *stdconsul.QueryMeta, error) {
 	var results []*stdconsul.ServiceEntry
-
-	if c.index != 0 && opts.WaitIndex < c.index {
-		return nil, nil, fmt.Errorf("invoked with same index consecutively")
-	}
 
 	for _, entry := range c.entries {
 		if entry.Service.Service != service {
@@ -98,11 +90,7 @@ func (c *testClient) Service(service, tag string, _ bool, opts *stdconsul.QueryO
 		results = append(results, entry)
 	}
 
-	c.lock.Lock()
-	c.index++
-	c.lock.Unlock()
-
-	return results, &stdconsul.QueryMeta{LastIndex: c.index}, nil
+	return results, &stdconsul.QueryMeta{LastIndex: opts.WaitIndex}, nil
 }
 
 func (c *testClient) Register(r *stdconsul.AgentServiceRegistration) error {

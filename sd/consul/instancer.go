@@ -100,7 +100,6 @@ func (s *Instancer) updateInstances() error {
 		s.index = index
 		s.cache.Update(sd.Event{Instances: instances})
 	}
-
 	return nil
 }
 
