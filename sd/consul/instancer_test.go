@@ -3,7 +3,6 @@ package consul
 import (
 	"context"
 	"fmt"
-	"github.com/go-kit/kit/sd/internal/instance"
 	"io"
 	"testing"
 	"time"
@@ -264,44 +263,6 @@ func TestInstancerWithInvalidIndex(t *testing.T) {
 	}
 }
 
-func TestInstancerUpdateInstances(t *testing.T) {
-
-	var (
-		logger = log.NewNopLogger()
-		client = newTestClient(consulState)
-		err    error
-	)
-
-	instancer := &Instancer{
-		cache:       instance.NewCache(),
-		client:      client,
-		logger:      logger,
-		service:     "search",
-		tags:        []string{"api"},
-		passingOnly: true,
-		quitc:       make(chan struct{}),
-		index:       0,
-		backoff:     10 * time.Millisecond,
-	}
-	_, _, _ = instancer.getInstances(0, nil)
-
-	if err = instancer.updateInstances(); err != nil {
-		t.Error(err)
-	}
-
-	if instancer.index != 2 {
-		t.Errorf("expected index %d, got %d", 2, instancer.index)
-	}
-
-	if err = instancer.updateInstances(); err != nil {
-		t.Error(err)
-	}
-
-	if instancer.index != 3 {
-		t.Errorf("expected index %d, got %d", 2, instancer.index)
-	}
-}
-
 type indexTestClient struct {
 	client *testClient
 	index  uint64
@@ -362,5 +323,5 @@ func TestInstancerLoopIndex(t *testing.T) {
 	instancer := NewInstancer(client, logger, "search", []string{"api"}, true)
 	defer instancer.Stop()
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 }

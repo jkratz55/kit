@@ -28,8 +28,6 @@ type Instancer struct {
 	tags        []string
 	passingOnly bool
 	quitc       chan struct{}
-	index       uint64
-	backoff     time.Duration
 }
 
 // NewInstancer returns a Consul instancer that publishes instances for the
@@ -44,20 +42,17 @@ func NewInstancer(client Client, logger log.Logger, service string, tags []strin
 		tags:        tags,
 		passingOnly: passingOnly,
 		quitc:       make(chan struct{}),
-		index:       defaultIndex,
-		backoff:     10 * time.Millisecond,
 	}
 
-	instances, index, err := s.getInstances(s.index, nil)
+	instances, index, err := s.getInstances(defaultIndex, nil)
 	if err == nil {
 		s.logger.Log("instances", len(instances))
 	} else {
 		s.logger.Log("err", err)
 	}
 
-	s.index = index
 	s.cache.Update(sd.Event{Instances: instances, Err: err})
-	go s.loop()
+	go s.loop(index)
 	return s
 }
 
@@ -66,41 +61,38 @@ func (s *Instancer) Stop() {
 	close(s.quitc)
 }
 
-func (s *Instancer) loop() {
+func (s *Instancer) loop(lastIndex uint64) {
+	var (
+		instances []string
+		err       error
+		d         time.Duration = 10 * time.Millisecond
+		index     uint64
+	)
 	for {
-		err := s.updateInstances()
+		instances, index, err = s.getInstances(lastIndex, s.quitc)
 		switch {
 		case errors.Is(err, errStopped):
-			return
+			return // stopped via quitc
 		case err != nil:
 			s.logger.Log("err", err)
-			time.Sleep(s.backoff)
-			s.backoff = conn.Exponential(s.backoff)
+			time.Sleep(d)
+			d = conn.Exponential(d)
+			s.cache.Update(sd.Event{Err: err})
+		case index == defaultIndex:
+			s.logger.Log("err", "index is not sane")
+			time.Sleep(d)
+			d = conn.Exponential(d)
+		case index < lastIndex:
+			s.logger.Log("err", "index is less than previous; resetting to default")
+			lastIndex = defaultIndex
+			time.Sleep(d)
+			d = conn.Exponential(d)
 		default:
-			s.backoff = 10 * time.Millisecond
+			lastIndex = index
+			s.cache.Update(sd.Event{Instances: instances})
+			d = 10 * time.Millisecond
 		}
 	}
-}
-
-func (s *Instancer) updateInstances() error {
-
-	instances, index, err := s.getInstances(s.index, s.quitc)
-	switch {
-	case errors.Is(err, errStopped):
-		return errStopped
-	case err != nil:
-		s.cache.Update(sd.Event{Err: err})
-		return err
-	case index == defaultIndex:
-		return errBadIndex
-	case index < s.index:
-		s.index = defaultIndex
-		return errBadIndex
-	default:
-		s.index = index
-		s.cache.Update(sd.Event{Instances: instances})
-	}
-	return nil
 }
 
 func (s *Instancer) getInstances(lastIndex uint64, interruptc chan struct{}) ([]string, uint64, error) {
