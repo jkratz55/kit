@@ -17,7 +17,7 @@ business value.
 
 ## Sponsors
 
-Click on Sponsor, above, for more information on sponsorship.
+Click [here](https://github.com/sponsors/peterbourgon) or Sponsor, above, for more information on sponsorship.
 
 ## Motivation
 
@@ -75,7 +75,7 @@ different starting assumptions.
 - [kujtimiihoxha/kit](https://github.com/kujtimiihoxha/kit) (unmaintained)
 - [nytimes/marvin](https://github.com/nytimes/marvin)
 - [sagikazarmark/mga](https://github.com/sagikazarmark/mga)
-- [sagikazarmark/protoc-gen-kit](https://github.com/sagikazarmark/protoc-gen-kit)
+- [sagikazarmark/protoc-gen-go-kit](https://github.com/sagikazarmark/protoc-gen-go-kit)
 - [tuneinc/truss](https://github.com/tuneinc/truss)
 
 ## Related projects
@@ -117,7 +117,7 @@ Projects with a ★ have had particular influence on Go kit's design (or vice-ve
 - [Negroni](https://github.com/codegangsta/negroni)
 - [Goji](https://github.com/zenazn/goji)
 - [Martini](https://github.com/go-martini/martini)
-- [Beego](http://beego.me/)
+- [Beego](https://beego.vip/)
 - [Revel](https://revel.github.io/) (considered [harmful](https://github.com/go-kit/kit/issues/350))
 - [GoBuffalo](https://gobuffalo.io/)
 
